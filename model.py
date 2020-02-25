@@ -272,38 +272,4 @@ class ReloadedModel(object):
         """ returns the planet y position """
         return self._y_p
 
-if __name__ == "__main__":
-
-    phase = np.loadtxt('/Users/vxh710/PhD/software/reloaded/results/pimen/run2/191009/2018-12-16/all_remove_kepler_bin_disc_int/20.25min/fitted_rv.txt',
-                       unpack=True, usecols=(0,))
-
-    v_eq = 6.0
-    l = -20.
-    alpha = 0.6
-    i_star = 120.
-
-    phase_f = np.linspace(phase[0]-0.003, phase[-1]+0.003, 100)
-
-    reloaded_kwargs = {'r_1':0.074449, 'i_p':np.rad2deg(1.52685),
-            'r_p':np.sqrt(0.00028), 'ld':'quad', 'ldc':[0.28, 0.27]}
-
-    relo1 = ReloadedModel(phase, **reloaded_kwargs)
-    v_tot1 = relo1(v_eq, l, i_star, alpha, phase=phase_f)
-
-
-    reloaded_kwargs = {'r_1':0.074449, 'i_p':np.rad2deg(1.52685),
-            'r_p':np.sqrt(0.00028), 'ld':'quad', 'ldc':[0.28, 0.27],
-            'oversample':5, 'dp':20.25/60/24/6.2682}
-    relo5 = ReloadedModel(phase, **reloaded_kwargs)
-    print(relo5.phase)
-    print(relo5._phase_os)
-
-    v_tot5 = relo5(v_eq, l, i_star, alpha, phase=phase_f)
-
-    plt.figure()
-
-    plt.plot(phase_f, v_tot1)
-    plt.plot(phase_f, v_tot5)
-
-    plt.show()
 
