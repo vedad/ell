@@ -29,13 +29,13 @@ def get_projected_separation(ecc, incl, omega, phase):
             * np.sqrt(1 - np.sin(incl)**2 *
                 np.sin(theta + omega)**2))
 
-def get_14_transit_duration(P, r_1, k, b, incl, ecc, omega):
+def get_14_transit_duration(P, r_1, k, b, incl, ecc=0, omega=0):
     return (P / np.pi *
      np.arcsin(r_1 * np.sqrt((1 + k)**2 - b**2) / np.sin(incl)) *
      np.sqrt(1 - ecc**2) / (1 + ecc * np.sin(omega))
     )
 
-def get_23_transit_duration(P, r_1, k, b, incl, ecc, omega):
+def get_23_transit_duration(P, r_1, k, b, incl, ecc=0, omega=0):
     return (P / np.pi *
      np.arcsin(r_1 * np.sqrt((1 - k)**2 - b**2) / np.sin(incl)) *
      np.sqrt(1 - ecc**2) / (1 + ecc * np.sin(omega))
@@ -70,10 +70,11 @@ def get_transit_mask(x, dur, t_exp=0, ref=0):
 #    delta = get_projected_separation(ecc, incl, omega, phase)
 #    return delta <= (r_1 - r_2)
 
-def read_fits(files, order=-1, instrument='coralie', oversample=1):
+def read_fits(files, order=-1, instrument='coralie', oversample=1, bad=None):
     n = len(files)
     files.sort()
 
+    m          = np.ones(n, dtype=bool)
     time       = np.zeros(n)
     texp       = np.zeros(n)
     fwhm       = np.zeros(n)
@@ -81,6 +82,7 @@ def read_fits(files, order=-1, instrument='coralie', oversample=1):
     rv_int_err = np.zeros(n)
     airmass    = np.zeros(n)
     contrast   = np.zeros(n)
+    snr50      = np.zeros(n)
     ccf        = []
     rv         = []
 
@@ -94,6 +96,7 @@ def read_fits(files, order=-1, instrument='coralie', oversample=1):
         rv_err_hdr = "HIERARCH ESO DRS CCF NOISE"
         airmass_hdr = "HIERARCH ESO OBS TARG AIRMASS"
         contrast_hdr = "HIERARCH ESO DRS CCF CONTRAST"
+        snr_hdr      = "HIERARCH ESO DRS SPE EXT SN50"
     elif instrument == 'harps-n':
         bjd_hdr    = "HIERARCH TNG DRS BJD"
         texp_hdr   = "EXPTIME"
@@ -117,6 +120,7 @@ def read_fits(files, order=-1, instrument='coralie', oversample=1):
         rv_int_err[i] = hdr[rv_err_hdr]
         airmass[i]    = hdr[airmass_hdr]
         contrast[i]    = hdr[contrast_hdr]
+        snr50[i]      = hdr[snr_hdr]
         
         v0 = hdr[vref_hdr]
         dv = hdr[vstep_hdr]
@@ -154,16 +158,21 @@ def read_fits(files, order=-1, instrument='coralie', oversample=1):
 #    else:
 #        rv = rv[0]
 
+    if bad is not None:
+        bad = np.atleast_1d(bad)
+        m[bad] = False
+    
     return (
-        rv[:,::oversample],
-        ccf[:,::oversample],
-        time,
-        rv_int,
-        rv_int_err,
-        texp,
-        sigma,
-        airmass,
-        contrast)
+        rv[m,::oversample],
+        ccf[m,::oversample],
+        time[m],
+        rv_int[m],
+        rv_int_err[m],
+        texp[m],
+        sigma[m],
+        airmass[m],
+        contrast[m],
+        snr50[m])
 
 
 def estimate_ccf_err(ccf, mask=None):
@@ -173,18 +182,22 @@ def estimate_ccf_err(ccf, mask=None):
     else:
         m = mask
      
-    ccf_err = np.ones_like(ccf)
+    # if return 2d array
+#    ccf_err = np.ones_like(ccf)
 
 #    error = np.sqrt(ccf)
     error = np.array(
             [np.std(ccf[i][~m[i]]) for i in range(ccf.shape[0])]
             )
-#    return error
 
-    ccf_err *= error[:, None]
+    # error is 1d
+    return error
+
+#    ccf_err *= error[:, None]
     
 
-    return ccf_err
+    # if return 2d array
+#    return ccf_err
 
 def get_ccf_residuals(master_out, ccf, mask=None):
     if mask is None:
@@ -234,7 +247,8 @@ def create_master_out(rv, ccf, ccf_err, velocity_mask=None, bad=None):
     
     c, mu = popt[[0,2]]
 
-    print('mu', mu)
+    print('mu = {:.4f} +- {:.4f}'.format(mu, _[2]))#, mu)
+#    print(what)
 #    rv_out       = rv - mu
 #    ccf_out     /= c
 #    ccf_err_out /= c
@@ -290,9 +304,10 @@ def inverted_normal_distribution(x, c, A, mu, sigma):
 #    return c + A * norm.pdf(x, loc=mu, scale=sigma)
     return (c - 
             A * np.exp(
-                -0.5*(x - mu)**2 / (2*sigma**2)
-                ) / 
-            (sigma * np.sqrt(2*np.pi))
+#                -0.5*(x - mu)**2 / (2*sigma**2)
+                -0.5 * ( (x - mu) / sigma )**2
+                )#/ 
+#            (sigma * np.sqrt(2*np.pi))
             )
 
 def fit_ccf_residuals_pymc3(rv, ccf, ccf_err=None, step=1000, tune=1000,
@@ -319,22 +334,47 @@ def fit_ccf_residuals_pymc3(rv, ccf, ccf_err=None, step=1000, tune=1000,
 
 #        c = pm.Normal('c', mu=0, sd=10)
 
-        c = pm.Normal('c', mu=0, sd=1)
+#        c = pm.Normal('c', mu=0, sd=1)
+        med = np.median(ccf)
+
+#        c = pm.Normal('c', mu=med, sd=np.std(ccf))
+        c_ppt = pm.Normal('c_ppt', mu=0, sd=np.std(ccf)*1e3)
+        c     = pm.Deterministic('c', c_ppt/1e3)
+#        c = pm.Normal('c', mu=0, sd=np.std(ccf)*1e3)
+#        c = 0.0
 #        c = pm.Uniform('c', -1, 1)
 
         rv_range = rv[-1] - rv[0]
+#        rv_range = 20
 
-        mu = pm.Bound(
-                pm.Normal, lower=rv[0], upper=rv[-1]
-                )(
-                        'mu', mu=0, sd=rv_range
-#                        testval=rv[np.argmin(ccf)]
+#        mu = pm.Bound(
+#                pm.Normal, lower=rv[0], upper=rv[-1]
+##                pm.Normal, lower=-15, upper=15,
+#                )(
+#                        'mu', mu=0, sd=5.0
+##                        testval=rv[np.argmin(ccf)]
+#                        )
+#        mu = -5.
+        # standard use
+#        mu = pm.Normal('mu', mu=0, sd=rv_range/2)
+
+        mu = pm.Bound(pm.Normal, lower=-5, upper=5)(
+                'mu', mu=0, sd=rv_range/2
                         )
 
 #        sigma = pm.Bound(pm.Normal, lower=0, upper=rv_range/2)(
 #                'sigma', mu=5, sd=rv_range)
 
-        sigma = pm.Bound(pm.HalfNormal, lower=0)('sigma', sd=10)
+#        sigma = pm.Bound(pm.HalfNormal, lower=0)('sigma', sd=10)
+#        sigma = pm.Bound(pm.HalfNormal, lower=0)('sigma', sd=5)
+#        sigma = pm.Bound(pm.HalfNormal, lower=0.5)('sigma', sd=2)
+        sigma = pm.HalfNormal('sigma', sd=10)
+#        sigma = 3
+#        log_sigma = pm.Normal('log_sigma', mu=1.1, sd=0.5)
+#        sigma = pm.Deterministic('sigma', tt.exp(log_sigma))
+
+        fwhm = pm.Deterministic('fwhm', sigma * 2 * tt.sqrt(2*tt.log(2)))
+
 #        sigma = pm.Uniform('sigma', 0, rv_range*3)
 
 #        log_sigma = pm.Normal('log_sigma', mu=0, sd=np.log((rv[-1]-rv[0])*3))
@@ -351,23 +391,47 @@ def fit_ccf_residuals_pymc3(rv, ccf, ccf_err=None, step=1000, tune=1000,
 #        A = pm.Deterministic('A', tt.exp(logA))
 
 #        A = pm.Uniform('A', lower=0, upper=1)
-        A = pm.HalfNormal('A', sd=1)
+#        A = pm.HalfNormal('A', sd=np.abs(ccf.max() - ccf.min()))
+        A_ppt = pm.HalfNormal('A_ppt', sd=np.abs(ccf.max() - ccf.min()) * 1e3)
+        A = pm.Deterministic('A', A_ppt/1e3)
+#        A = 0.0002
+#        A = pm.Bound(pm.Normal, lower=1e-6, upper=0.1)('A', mu=0.002, sd=0.01)
+#        print(np.abs(
+#                        np.min(ccf) - np.median(ccf)
+#                        ))
+
+#        logA = pm.Normal('logA',
+#                mu=np.log(
+#                    np.abs(
+#                        np.min(ccf) - np.median(ccf)
+#                        )
+#                    ),
+#                sd=5)
+#        A    = pm.Deterministic('A', tt.exp(logA))
 #        A = pm.Bound(pm.Normal, lower=0, upper=1)
 #                'A', mu
-
-        jitter = pm.Bound(pm.HalfNormal, lower=0)('jitter', sd=1)
 #        jitter = pm.Uniform('jitter', 0, 1)
 #        jitter = pm.Deterministic('jitter', tt.exp(logjitter))
-
     #     model = c - A * pm.Normal('')
-        mod = (c - 
-                A * tt.exp(-0.5*(rv - mu)**2 / sigma**2)#/ 
+        mod = (c -
+#                A * tt.exp(-0.5*(rv - mu)**2 / sigma**2)#/ 
+                A * tt.exp(-0.5 * tt.sqr((rv - mu) / sigma))#/ 
 #                (sigma * np.sqrt(2*np.pi))
                 )
 
         models = pm.Deterministic('models', mod)
 
-        obs = pm.Normal('obs', mu=mod, sd=jitter, observed=ccf)
+        if ccf_err is None:
+#        jitter = pm.Bound(pm.HalfNormal, lower=0)('jitter', sd=1)
+            jitter_ppt = pm.HalfNormal('jitter_ppt', sd=np.std(ccf)*1e3)
+            jitter = pm.Deterministic('jitter', jitter_ppt/1e3)
+#            log_jitter = pm.Normal('log_jitter', mu=np.log(np.std(ccf)*10), sd=1)
+#            jitter = pm.Deterministic('jitter', tt.exp(log_jitter))
+#            jitter = pm.Bound(pm.HalfNormal, lower=0)('jitter', sd=np.std(ccf))
+            obs = pm.Normal('obs', mu=mod, sd=jitter, observed=ccf)
+        else:
+            obs = pm.Normal('obs', mu=mod, sd=ccf_err, observed=ccf)
+
 #        obs = pm.Normal('obs', mu=mod, sd=np.median(ccf_err), observed=ccf)
 
         trace = pm.sample(step, tune=tune, chains=chains, cores=cores,
@@ -379,9 +443,13 @@ def fit_ccf_residuals_pymc3(rv, ccf, ccf_err=None, step=1000, tune=1000,
 def fit_ccf_residuals(rv, ccf, err=None, p0=None, **kwargs):
 
     n      = ccf.shape[0]
-    mu     = np.zeros(n)
-    mu_err = np.zeros(n)
-    models = np.zeros_like(ccf)
+#    mu     = np.zeros(n)
+#    mu_err = np.zeros(n)
+#    models = np.zeros_like(ccf)
+#    (level, contrast, centre, width,
+#     level_err, contrast_err, centre_err, width_err) = np.zeros((8,n))
+
+    popts, perrs = [], []
 
     if err is None:
         err = np.ones_like(ccf)
@@ -390,17 +458,24 @@ def fit_ccf_residuals(rv, ccf, err=None, p0=None, **kwargs):
 
         popt, perr = fit_ccf(rv, ccf[i], yerr=err[i], p0=p0,
                             **kwargs)
-        mu[i]      = popt[2]
-        mu_err[i]  = perr[2]
+#        for j,x in enumerate([level, contrast, centre, width]):
+#            x[i] = popt[j]
+#            level[i] = 
+#        level[i] = popt[0]
+        popts.append(popt)
+        perrs.append(perr)
+#        mu[i]      = popt[2]
+#        mu_err[i]  = perr[2]
 
-        if len(popt) > 4:
-            s = slice(0,-1)
-        else:
-            s = slice(0,None)
+#        if len(popt) > 4:
+#            s = slice(0,-1)
+#        else:
+#            s = slice(0,None)
 
-        models[i]  = inverted_normal_distribution(rv, *popt[s])
+#        models[i]  = inverted_normal_distribution(rv, *popt[s])
 
-    return mu, mu_err, models
+#    return mu, mu_err, models
+    return np.atleast_2d(popts), np.atleast_2d(perrs)
 
 def _log_probability(theta, x, y, yerr):
 
@@ -432,10 +507,17 @@ def fit_ccf(rv, ccf, yerr=None, p0=None, method='lsq', mcmc_steps=2000,
     x = rv
     y = ccf
 
+    if yerr is None:
+        yerr = None#np.ones_like(y)
+        abs_sig = False
+    else:
+        abs_sig=True
+
     # initial guesses
 #    if p0 is None:
     c0      = np.median(y)
-    A0      = -np.abs(c0 / np.min(y))
+#    A0      = np.abs(c0 / np.min(y))
+    A0      = np.abs(c0 - np.min(y))
     mu0     = x[np.argmin(y)]
     sigma0  = 3
 
@@ -462,7 +544,10 @@ def fit_ccf(rv, ccf, yerr=None, p0=None, method='lsq', mcmc_steps=2000,
         popt, pcov = curve_fit(f,
                                x, y, p0=p0, method='lm',
                                sigma=np.ones_like(y)*yerr,
-                               absolute_sigma=True)
+                               absolute_sigma=True,
+#                               sigma=yerr,
+#                               absolute_sigma=abs_sig
+                               )
         perr = np.sqrt(np.diag(pcov))
 
     elif method == 'mcmc':
@@ -761,10 +846,15 @@ def plot_ccfs(rv, ccf, ccf_err=None, model=None, mask=None):#fwhm=None, sigma=No
 
 def plot_trace(phase, rv, ccf, transit_mask, 
                bad=None,
-               duration_14=None, duration_23=None, period=None,
+               duration_14=None, duration_23=None,
+               period=None,
+               out_offset=None,
                interpolate_trace=True,
                use_percentiles=False, cmap='RdBu_r',
-               style='default', figsize=(6,6), gridspec_kwargs={}):
+               style='default', figsize=(6,6), gridspec_kwargs={},
+               show_legend=False,
+               trace_ylabel='phase',
+               flux_ylabel='flux'):
 
     if bad is not None:
         keep = np.arange(len(transit_mask))
@@ -819,25 +909,50 @@ def plot_trace(phase, rv, ccf, transit_mask,
     axes[0,1].axis('off')
 
     ax_res.set_xlim([rv.min(),rv.max()])
-    ax_res.set_ylabel('flux (ppt)')
+    ax_res.set_ylabel(flux_ylabel)
 
     ax_trace.set_xlim([rv.min(),rv.max()])
     ax_trace.set_ylim([phase.min(), phase.max()])
     ax_trace.set_xlabel('radial velocity (km/s)')
-    ax_trace.set_ylabel('phase (hours)')
+    ax_trace.set_ylabel(trace_ylabel)
 
     # plot out-of-transit residuals in gray with arbitrary offset
-    in_min = np.abs(np.min(ccf_in))
-    if any(~m):
-        in_min += np.abs(np.max(ccf_out))
-
-    for i in range(ccf_out.shape[0]):
-        ax_res.plot(rv, ccf_out[i]-in_min, lw=0.5, c='gray')
+    if out_offset is not None:
+        in_min = out_offset
+    else:
+        in_min = np.abs(np.min(ccf_in))
+        if any(~m):
+            in_min += np.abs(np.max(ccf_out))
 
     # alpha gradient for in-transit CCFs to show time evolution
     colorgrad = cm.get_cmap('Greens')(np.linspace(0.4,1,len(phase[m])))
     for i in range(ccf_in.shape[0]):
-        ax_res.plot(rv, ccf_in[i], lw=1.0, c=colorgrad[i])
+
+        label = None
+        if i < (ccf_in.shape[0] - 1):
+            label = None
+        else:
+            label = 'in transit'
+
+        ax_res.plot(rv, ccf_in[i], lw=0.5, c=colorgrad[i],
+                    label=label, rasterized=True)
+
+    for i in range(ccf_out.shape[0]):
+
+        label = None
+        if i < (ccf_out.shape[0] - 1):
+            label = None
+        else:
+            label = 'out of transit'
+
+        ax_res.plot(rv, ccf_out[i]-in_min, lw=0.5, c='gray',
+                    label=label, rasterized=True)
+#        ax_res.plot(rv, ccf_out[i], lw=0.5, c='gray',
+#                    label=label, rasterized=True, zorder=-300, alpha=0.5)
+
+
+    if show_legend:
+        ax_res.legend(frameon=False)
 
     if use_percentiles:
         vmin = np.percentile(ccf_in, 20)
@@ -870,26 +985,30 @@ def plot_trace(phase, rv, ccf, transit_mask,
     cbar = fig.colorbar(im, cax=ax_c)
 #    cbar.set_label('flux (ppt)')
 
-    ax_trace.axvline(0, linestyle='dotted', color='#aaaaaa', linewidth=1.0)
-    ax_trace.axhline(0, linestyle='dotted', color='#aaaaaa', linewidth=1.0)
+    ax_trace.axvline(0, linestyle='dotted', color='#aaaaaa', linewidth=1.0,
+            rasterized=True)
+    ax_trace.axhline(0, linestyle='dotted', color='#aaaaaa', linewidth=1.0,
+            rasterized=True)
 
-    if duration_14 is not None and period is not None:
+#    if duration_14 is not None and period is not None:
+    if duration_14 is not None:
         ax_trace.axhline(-0.5*duration_14, linestyle='solid', 
-                color='#aaaaaa', linewidth=1.0)
+                color='#aaaaaa', linewidth=1.0, rasterized=True)
         ax_trace.axhline(0.5*duration_14, linestyle='solid', 
-                color='#aaaaaa', linewidth=1.0)
+                color='#aaaaaa', linewidth=1.0, rasterized=True)
 
 #        ax_trace.axhline(-0.5*duration_14/period, linestyle='solid', 
 #                color='#aaaaaa', linewidth=1.5)
 #        ax_trace.axhline(0.5*duration_14/period, linestyle='solid', 
 #                color='#aaaaaa', linewidth=1.5)
 
-    if duration_23 is not None and period is not None:
+#    if duration_23 is not None and period is not None:
+    if duration_23 is not None:
         if np.isfinite(duration_23):
             ax_trace.axhline(-0.5*duration_23, linestyle='dashed', 
-                    color='#aaaaaa', linewidth=1.0)
+                    color='#aaaaaa', linewidth=1.0, rasterized=True)
             ax_trace.axhline(0.5*duration_23, linestyle='dashed',
-                    color='#aaaaaa', linewidth=1.0)
+                    color='#aaaaaa', linewidth=1.0, rasterized=True)
 
 #            ax_trace.axhline(-0.5*duration_23/period, linestyle='dashed', 
 #                    color='#aaaaaa', linewidth=1.5)
@@ -1014,7 +1133,7 @@ def plot_fit(x, y, yerr, omc, xmod, ymod,
             ax1.errorbar(x[i]*period, y[i], **kwargs)
             ax2.errorbar(x[i]*period, omc[i], **kwargs)
 
-        ax1.plot(xmod*period, ymod, color='C1')
+#        ax1.plot(xmod*period, ymod, color='C1')
 
     else:
         for i in range(n):
