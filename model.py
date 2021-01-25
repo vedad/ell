@@ -63,10 +63,18 @@ class ReloadedModel(object):
  
         if c is not None:
             v_tot += self.v_conv(*c)
+
+#        print('phase', phase)
+#        print('phase_os', self._phase_os)
         
         # average the oversampled points
-        return np.array([np.mean(v_tot[i:i+self.os])
-                         for i in xrange(0, len(v_tot), self.os)])
+#        print('vtot', v_tot)
+        v_tot_avg = np.array([np.mean(v_tot[i:i+self.os])
+                         for i in range(0, len(v_tot), self.os)])
+#        print('vtot_avg', v_tot_avg)
+#        return np.array([np.mean(v_tot[i:i+self.os])
+#                         for i in range(0, len(v_tot), self.os)])
+        return v_tot_avg
 
     def _oversample_phase(self, phase):
         return np.concatenate([np.linspace(p - self.dp/2, p + self.dp/2, self.os)
@@ -140,11 +148,16 @@ class ReloadedModel(object):
     def compute_intensity(self):
         """ computes the normalised intensity on grid according to the limb
         darkening law """
+        #print('mu', self.mu)
         self._intensity = self.limb_darkening_model(self.mu)
 
     def limb_darkening_model(self, mu):
         """ returns the intensity on mu given the chosen limb darkening law """
         return self.ld_quad(mu)
+#        return self.ld_power2(mu)
+
+    def ld_power2(self, mu):
+        return 1 - self.ldc[0] * (1 - mu**self.ldc[1])
 
     def ld_quad(self, mu):
         """ returns intensity from a quadratic limb darkening law """
@@ -181,7 +194,10 @@ class ReloadedModel(object):
         """ returns the brightness-averaged stellar rotational velocity 
         occulted by the planet """
         # only select occulted mu's
-        return self.compute_brightness_average(v_stel)
+        vavg = self.compute_brightness_average(v_stel)
+#        print('v avg', any(np.isnan(vavg)))
+#        return self.compute_brightness_average(v_stel)
+        return vavg 
 
     def v_conv(self, *c):
         """ returns the convective contribution to the velocity """
@@ -194,7 +210,7 @@ class ReloadedModel(object):
         clen = len(c)
 #        integral = np.array([quad(_integrand, a=0, b=1, args=(i), epsabs=1e-3)[0]
         integral = np.array([quad(_integrand, a=0, b=1, args=(i))[0]
-                             for i in xrange(clen)])
+                             for i in range(clen)])
 
         # check for nans
         assert ~np.any(np.isnan(integral)), "nan in integral"
@@ -206,7 +222,7 @@ class ReloadedModel(object):
         c[0] = c0
 
 
-        v = np.sum([c[i] * self.mu_avg**i for i in xrange(clen)], axis=0)
+        v = np.sum([c[i] * self.mu_avg**i for i in range(clen)], axis=0)
 
         return v
 
@@ -224,6 +240,8 @@ class ReloadedModel(object):
     def compute_mu_avg(self):
         """ numerically computes the brightness-weighted mu on the stellar grid """
         mu_avg = self.compute_brightness_average(self.mu)
+#        print('mu_avg', any(np.isnan(mu_avg)))
+#        print('occulted', np.any(self.occulted))
         self._mu_avg = mu_avg
 
     @property
