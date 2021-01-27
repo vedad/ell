@@ -258,13 +258,26 @@ def plot_trace(phase, rv, ccf, transit_mask,
     return fig
 
 
-def plot_fit(x, y, yerr, omc, xmod, ymod,
-            z=None,
-             samples=None, mod_sd=None,
-                period=1,
-                figsize=None, ylim=None,
-                gridspec_kwargs={},
-                style='default'):
+#colors = ["#A01810", "#E4704A", "#1E4864", "#2F90A7", "#BD4E31"]
+def plot_surface_velocity(x, y, yerr,
+            xmod=None,
+            ymod=None,
+            ymod_sd=None,
+            ymod_kmax=3,
+            samples=None,
+            ymod_color="#A01810",
+            samples_cmap="Reds",
+            residual=None,
+            style='paper',
+            figsize=(5, 3.8)
+            ):
+
+    if ymod is not None and samples is not None:
+        raise ValueError("only `ymod` or `samples` may be used, not both")
+
+    plot_model = (xmod is not None) & (ymod is not None)
+    plot_samples = samples is not None
+    plot_residual = residual is not None
 
     if isinstance(x, np.ndarray):
         x = [x]
@@ -272,19 +285,30 @@ def plot_fit(x, y, yerr, omc, xmod, ymod,
         y = [y]
     if isinstance(yerr, np.ndarray):
         yerr = [yerr]
-    if isinstance(omc, np.ndarray):
-        omc = [omc]
-    if z is not None and isinstance(z, np.ndarray):
-        z = [z]
+    if plot_residual and isinstance(residual, np.ndarray):
+        residual = [residual]
 
     n = len(x)
 
-    plt.style.use(style)
+    markers = ['.', 'd', 'x', '^', 's']
 
+#    colors = ["#A01810", "#E4704A", "#1E4864", "#2F90A7", "#BD4E31"] # org blue/orange
+    # blue/orange in new order
+    colors = ["#1E4864",  "#E4704A",  "#2F90A7",  "#BD4E31"]
+#    colors = ["#2F90A7", "#E4704A", "#1E4864",   "#BD4E31"]
 
-    if samples is not None:
-        samples = np.atleast_2d(samples)
+    sizes = [6, 4, 5, 5, 5]
 
+    if plot_residual:
+        rows = 2
+        gridspec_kw = {
+              'height_ratios':[3,1], 
+              'hspace':0.03,
+              'wspace':0.02
+              }
+    else:
+        rows = 1
+        gridspec_kw = None
 
     if figsize is None:
         fs = figsize
@@ -299,131 +323,80 @@ def plot_fit(x, y, yerr, omc, xmod, ymod,
 
         figsize = (w, h)
 
-    ncols = 1
-    gridspec_kw = {
-                  'height_ratios':[3,1], 
-                  'hspace':0.03
-                  }
+    fig, ax = plt.subplots(rows, 1, gridspec_kw=gridspec_kw, squeeze=False,
+            figsize=figsize, sharex=True)
 
-    if z is not None:
-        ncols += 1
-        gridspec_kw['width_ratios'] = [20,1]
-        gridspec_kw['wspace'] = 0.02
+    ax[0][0].set_ylabel('surface radial velocity (km/s)')
+    ax[0][0].set_xlim(xmod.min(), xmod.max())
 
-
-    gridspec_kw.update(gridspec_kwargs)
-
-    gs = GridSpec(2, ncols, **gridspec_kw)
-    fig = plt.figure(figsize=figsize)
-#    fig, axes = plt.subplots(2, ncols,
-##                         sharex=True, 
-#                         figsize=figsize,
-#                         gridspec_kw=gridspec_kw
-#                         )
-    ax1 = fig.add_subplot(gs[0,0])
-    ax2 = fig.add_subplot(gs[1,0], sharex=ax1)
-
-    if z is not None:
-        axc = fig.add_subplot(gs[:,1])
-#    if z is None:
-#        ax1 = fig.add_subplot(gs[0,0])
-#        ax2 = fig.add_subplot(gs[1,0], sharex=ax1)
-##        ax1 = axes[0]
-##        ax2 = axes[1]
-#    else:
-#        ax1 = axes[0,0]
-#        ax2 = axes[1,0]
-#        axc = axes[0,1]
-
-    ax1.set_ylabel('occulted surface RV (km/s)')
-    ax1.tick_params(axis='x', which='both', labelbottom=False)
-
-    if ylim is None:
-        offset = np.median(yerr)
-        ylim = (ymod.min()-offset, ymod.max()+offset)
-    ax1.set_ylim(ylim)
-
-
-    ax2.tick_params(axis='x', which='both', top=True)
-    xlabel = 'phase'
-    if period is not None:
-        xlabel += ' (hours)'
-    ax2.set_xlabel(xlabel)
-    ax2.set_ylim(-5*np.median(yerr), 5*np.median(yerr))
-
-    if period is not None:
-        period *= 24
-
-    if n == 1:
-        markers = ['.']
-    else:
-        markers = ['v', '^', '.', 's', 'd']
-
-    colors = ['C{0}'.format(i) for i in range(5)]
-
-    if z is None:
+    if plot_residual:
+        ax[0][0].tick_params(axis='x', which='both', labelbottom=False)
+        ax[1][0].set_xlabel('phase')
+        ax[1][0].set_ylabel("O - C (km/s)")
+        ax[1][0].axhline(0, c="#aaaaaa", lw=1.5)
         for i in range(n):
-            kwargs = {'capsize':0, 'fmt':'none', 'color':colors[i],
-                    'alpha':0.5}
-            ax1.errorbar(x[i]*period, y[i], yerr=yerr[i], **kwargs)
-            ax2.errorbar(x[i]*period, omc[i], yerr=yerr[i],
-                    **kwargs)
-
-            kwargs = {'fmt':markers[i], 'color':colors[i]}
-            ax1.errorbar(x[i]*period, y[i], **kwargs)
-            ax2.errorbar(x[i]*period, omc[i], **kwargs)
-
-#        ax1.plot(xmod*period, ymod, color='C1')
-
+            ax[1][0].errorbar(
+                    x[i],
+                    residual[i],
+                    yerr=yerr[i],
+                    capsize=0,
+                    markersize=sizes[i],
+                    c=colors[i],
+                    fmt=markers[i],
+                    elinewidth=0.5)
     else:
-        for i in range(n):
+        ax[0][0].set_xlabel('phase')
 
-            # plot errorbars
-            kwargs = {'capsize':0, 'fmt':'none', 'color':'#aaaaaa', 'alpha':1.0,
-                    'zorder':-100}
-            ax1.errorbar(x[i]*period, y[i], yerr=yerr[i],
-                    **kwargs)
-            ax2.errorbar(x[i]*period, omc[i], yerr=yerr[i],
-                    **kwargs)
+    for i in range(n):
+        ax[0][0].errorbar(
+                x[i], 
+                y[i], 
+                yerr=yerr[i], 
+                capsize=0, 
+                markersize=sizes[i],
+                c=colors[i],
+                fmt=markers[i],
+                elinewidth=0.5)
 
-            kwargs = {'marker':markers[i],# 's':40,
-                    'edgecolors':'none', 'c':z[i], 'cmap':cm.inferno,
-                    'vmin':0, 'vmax':1, 'zorder':100}
-            im = ax1.scatter(x[i]*period, y, 
-                    **kwargs)
-            imr = ax2.scatter(x[i]*period, omc[i], **kwargs)
+    if plot_model and not plot_samples:
+        ax[0][0].plot(xmod, ymod, color=ymod_color, lw=1.5)
 
-        ax1.plot(xmod*period, ymod, color='C0')
+        if ymod_sd is not None:
 
-        cbar = fig.colorbar(im, cax=axc)
-        cbar.set_label('$\langle \mu \\rangle$')
-        xmajorlocator = plticker.MaxNLocator(prune='both', nbins=6)
-        cbar.set_ticks(xmajorlocator)
-        cbar.update_ticks()
-#                    marker=markers[n],
-#                            s=markersize[n],
-#                            edgecolors='none',
-#                            c=relo.mu_avg[inds[n]], cmap=cmap, vmin=0.0, vmax=1.0,
-#                            label=labels[n],
-#                            zorder=100)
-#            imr = axr.scatter(p[inds[n]]*p2h, resid[inds[n]], marker=markers[n],
-#                              s=markersize[n],
-#                              edgecolors='none',
-#                              c=relo.mu_avg[inds[n]],cmap=cmap, vmin=0.0, vmax=1.0,
-#                              label=labels[n],
-#                              zorder=100)
+            for k in range(1,ymod_kmax+1):
+                ax[0][0].fill_between(
+                        xmod,
+                        ymod - k * ymod_sd,
+                        ymod + k * ymod_sd,
+                        color=ymod_color,
+                        lw=0,
+                        alpha=0.4 - k * 0.1)
 
+                ax[1][0].fill_between(
+                        xmod,
+                        - k * ymod_sd,
+                        k * ymod_sd,
+                        color=ymod_color,
+                        lw=0,
+                        alpha=0.4 - k * 0.1)
 
+    elif plot_samples:
+        cmap = plt.get_cmap(samples_cmap)
 
-    if samples is not None:
-        for i in range(samples.shape[0]):
-            ax1.plot(xmod*period, samples[i], color='C1', lw=0.5, alpha=0.2)
+        percs = np.linspace(51, 99, 100)
+        _colors = (percs - np.min(percs)) / (np.max(percs) - np.min(percs))
+        for i, p in enumerate(percs[::-1]):
+            upper = np.percentile(samples, p, axis=0)
+            lower = np.percentile(samples, 100-p, axis=0)
+            color_val = _colors[i]
+            ax[0][0].fill_between(
+                    xmod,
+                    upper, 
+                    lower,
+                    color=cmap(color_val), 
+                    alpha=0.8, 
+                    zorder=-200)
 
-    if mod_sd is not None:
-        ax1.fill_between(xmod*period, ymod-mod_sd, ymod+mod_sd, alpha=0.5,
-        c='C1', lw=0, edgecolor='none')
-
-    ax2.axhline(0, c="#aaaaaa", lw=2)
 
     return fig
 
