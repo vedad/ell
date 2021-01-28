@@ -1,21 +1,17 @@
 #!/usr/bin/env python
 
-from __future__ import (print_function, division)
+
+__all__ = ["plot_limbdark_map", "plot_velocity_map"]
 
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
-from scipy.interpolate import griddata
-from scipy.stats import norm
-from scipy.optimize import curve_fit
-from astropy.io import fits
-import os
 
 import matplotlib.colors as colors
 import matplotlib.cm as cm
-import matplotlib.ticker as plticker
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-
+from ..limbdark import QuadLimbDark
 
 def plot_ccfs(rv, ccf, ccf_err=None, model=None, mask=None):#fwhm=None, sigma=None, k=3, model=None):
 
@@ -400,3 +396,131 @@ def plot_surface_velocity(x, y, yerr,
 
     return fig
 
+def plot_limbdark_map(u=[0.4, 0.3], ld='quad', Nxy=200):
+
+    if ld == 'quad':
+        limbdark = QuadLimbDark
+
+    x = np.linspace(-1, 1, Nxy)
+    y = np.linspace(-1, 1, Nxy)
+
+    theta = np.linspace(0, 2*np.pi, 4000)
+    r = 1
+    _x = r * np.cos(theta)
+    _y = r * np.sin(theta)
+
+    X, Y = np.meshgrid(x,y)
+
+    # print(X.shape)
+    inside = X**2 + Y**2 <= 1
+
+    delta = np.sqrt(X**2 + Y**2)
+    delta[delta > 1] = 1
+
+    mu = np.sqrt(1 - delta**2)
+    mu[~inside] = 0
+
+
+    intensity = limbdark.intensity(mu, u)
+
+    fig, ax = plt.subplots(figsize=(6,6))
+
+    ax.plot(_x, _y, 'black', lw=2.5)
+
+    cmap = cm.get_cmap("gist_heat")
+
+    im = ax.pcolormesh(X, Y, intensity, 
+                cmap=cmap, # norm=norm,
+                vmin=intensity[inside].min(),
+                vmax=intensity[inside].max(),
+                shading="gouraud")
+
+
+    ax.set_aspect('equal')
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.1)
+
+
+    cbar = fig.colorbar(im, cax=cax, orientation='vertical', label='relative intensity')
+    ax.axis('off')
+
+    return fig
+
+def plot_velocity_map(v_eq, ell, i_star=90, alpha=0, Nxy=200,
+                    vmin=None,
+                    vmax=None,
+                    planet=None):
+
+    ell    = np.deg2rad(ell)
+    i_star = np.deg2rad(i_star)
+
+
+    x = np.linspace(-1, 1, Nxy)
+    y = np.linspace(-1, 1, Nxy)
+
+    X, Y = np.meshgrid(x,y)
+    inside = X**2 + Y**2 <= 1
+
+    xnorm      = X * np.cos(ell) -  Y * np.sin(ell)
+    ynorm      = X * np.sin(ell) + Y * np.cos(ell)
+    znorm      = np.sqrt(1 - xnorm**2 - ynorm**2)
+#    znorm[~inside] = 1
+    beta       = 0.5*np.pi - i_star
+    znorm_mark = znorm * np.cos(beta) - ynorm * np.sin(beta) # not used further?
+    ynorm_mark = znorm * np.sin(beta) + ynorm * np.cos(beta)
+    V          = (xnorm * v_eq * np.sin(i_star) *  (1 - alpha * ynorm_mark**2))
+
+    theta = np.linspace(0, 2*np.pi, 4000)
+    r = 1
+    _x = r * np.cos(theta)
+    _y = r * np.sin(theta)
+
+    plt.style.use('paper')
+    fig, ax = plt.subplots()#figsize=(6,6))
+    ax.plot(_x, _y, 'black', lw=1.0, rasterized=True)
+
+#    from matplotlib import cm
+    cmap = cm.get_cmap("RdBu_r")
+    if vmin is None:
+        vmin = V[~np.isnan(V)].min()
+    if vmax is None:
+        vmax = V[~np.isnan(V)].max()
+
+    norm = colors.DivergingNorm(vmin=vmin, vcenter=0., vmax=vmax)
+
+    # RdBu_r, coolwarm, bwr, seismic
+
+    im = ax.pcolormesh(X, Y, V, 
+                cmap=cmap, norm=norm,
+                shading="gouraud", rasterized=True)
+
+    ax.set_aspect('equal')
+
+    print(fig.get_size_inches())
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("top", size="5%", pad=0.03)
+
+    cbar = fig.colorbar(im, cax=cax, orientation='horizontal')
+    cax.tick_params(axis='x', which='both', labelbottom=False, labeltop=True, top=True, bottom=False)
+    cax.set_title('projected rotational velocity (km/s)')
+
+    ax.set_xlim(-1.01, 1.01)
+    ax.set_ylim(-1.01, 1.01)
+    ax.axis('off')
+    
+    if planet is not None:
+        from matplotlib.patches import Circle
+
+        roa, ror, i_p, phi = planet
+
+        xp = np.sin(2 * np.pi * phi) / roa
+        yp = -np.cos(2 * np.pi * phi) * np.cos(np.deg2rad(i_p)) / roa
+
+        circle = Circle((xp, yp), radius=ror, fill=True, color='black',
+                    edgecolor='none', alpha=1, lw=0)
+        ax.fill_betweenx(_x, _y,
+                        where = (_x >= (yp-ror)) & (_x <= (yp+ror)),
+                     color = 'k', ec='none', lw=0, alpha=0.3)
+        ax.add_artist(circle)
+
+    return fig
