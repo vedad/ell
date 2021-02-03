@@ -183,8 +183,6 @@ def plot_trace(phase, rv, ccf, transit_mask,
 
         ax_res.plot(rv, ccf_out[i]-in_min, lw=0.5, c='gray',
                     label=label, rasterized=True)
-#        ax_res.plot(rv, ccf_out[i], lw=0.5, c='gray',
-#                    label=label, rasterized=True, zorder=-300, alpha=0.5)
 
 
     if show_legend:
@@ -199,11 +197,6 @@ def plot_trace(phase, rv, ccf, transit_mask,
     norm = colors.DivergingNorm(vmin=vmin, vcenter=0., vmax=vmax)
     cmap = cm.get_cmap(cmap)
 
-#    if trace == 'contour':
-#        X, Y = np.meshgrid(rv, phase)
-#        im = ax_trace.contourf(X, Y, ccf, 300, cmap=cmap, rasterized=True, 
-#                norm=norm)
-#    elif trace == 'mesh':
     if interpolate_trace:
         shading = 'gouraud'
     else:
@@ -213,32 +206,21 @@ def plot_trace(phase, rv, ccf, transit_mask,
             cmap=cmap, linewidth=0, rasterized=True, norm=norm,
             shading=shading)
 #    im.set_edgecolor('face')
-#    else:
-#        raise ValueError("trace value '{0}' not recognised, "
-#                         "use 'contour' or 'mesh'")
-#        sys.exit()
 
     cbar = fig.colorbar(im, cax=ax_c)
-#    cbar.set_label('flux (ppt)')
+#    cbar.set_label('flux')
 
     ax_trace.axvline(0, linestyle='dotted', color='#aaaaaa', linewidth=1.0,
             rasterized=True)
     ax_trace.axhline(0, linestyle='dotted', color='#aaaaaa', linewidth=1.0,
             rasterized=True)
 
-#    if duration_14 is not None and period is not None:
     if duration_14 is not None:
         ax_trace.axhline(-0.5*duration_14, linestyle='solid', 
                 color='#aaaaaa', linewidth=1.0, rasterized=True)
         ax_trace.axhline(0.5*duration_14, linestyle='solid', 
                 color='#aaaaaa', linewidth=1.0, rasterized=True)
 
-#        ax_trace.axhline(-0.5*duration_14/period, linestyle='solid', 
-#                color='#aaaaaa', linewidth=1.5)
-#        ax_trace.axhline(0.5*duration_14/period, linestyle='solid', 
-#                color='#aaaaaa', linewidth=1.5)
-
-#    if duration_23 is not None and period is not None:
     if duration_23 is not None:
         if np.isfinite(duration_23):
             ax_trace.axhline(-0.5*duration_23, linestyle='dashed', 
@@ -246,15 +228,9 @@ def plot_trace(phase, rv, ccf, transit_mask,
             ax_trace.axhline(0.5*duration_23, linestyle='dashed',
                     color='#aaaaaa', linewidth=1.0, rasterized=True)
 
-#            ax_trace.axhline(-0.5*duration_23/period, linestyle='dashed', 
-#                    color='#aaaaaa', linewidth=1.5)
-#            ax_trace.axhline(0.5*duration_23/period, linestyle='dashed',
-#                    color='#aaaaaa', linewidth=1.5)
-
     return fig
 
 
-#colors = ["#A01810", "#E4704A", "#1E4864", "#2F90A7", "#BD4E31"]
 def plot_surface_velocity(x, y, yerr,
             xmod=None,
             ymod=None,
