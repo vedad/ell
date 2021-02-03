@@ -502,7 +502,7 @@ def plot_velocity_map(v_eq, ell, i_star=90, alpha=0, Nxy=200,
 
     cbar = fig.colorbar(im, cax=cax, orientation='horizontal')
     cax.tick_params(axis='x', which='both', labelbottom=False, labeltop=True, top=True, bottom=False)
-    cax.set_title('projected rotational velocity (km/s)')
+    cax.set_title('radial surface velocity (km/s)')
 
     ax.set_xlim(-1.01, 1.01)
     ax.set_ylim(-1.01, 1.01)
@@ -512,6 +512,7 @@ def plot_velocity_map(v_eq, ell, i_star=90, alpha=0, Nxy=200,
         from matplotlib.patches import Circle
 
         roa, ror, i_p, phi = planet
+#        ror, b, phi = planet
 
         xp = np.sin(2 * np.pi * phi) / roa
         yp = -np.cos(2 * np.pi * phi) * np.cos(np.deg2rad(i_p)) / roa
