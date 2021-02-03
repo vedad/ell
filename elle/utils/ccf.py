@@ -15,30 +15,6 @@ import matplotlib.colors as colors
 import matplotlib.cm as cm
 import matplotlib.ticker as plticker
 
-def get_14_transit_duration(P, r_1, k, b, incl, ecc=0, omega=0):
-    return (P / np.pi *
-     np.arcsin(r_1 * np.sqrt((1 + k)**2 - b**2) / np.sin(incl)) *
-     np.sqrt(1 - ecc**2) / (1 + ecc * np.sin(omega))
-    )
-
-def get_23_transit_duration(P, r_1, k, b, incl, ecc=0, omega=0):
-    return (P / np.pi *
-     np.arcsin(r_1 * np.sqrt((1 - k)**2 - b**2) / np.sin(incl)) *
-     np.sqrt(1 - ecc**2) / (1 + ecc * np.sin(omega))
-    )
-
-def get_transit_mask(x, dur, t_exp=0, ref=0):
-#    dur = (P / np.pi *
-#     np.arcsin(r_1 * np.sqrt((1 + k)**2 - b**2) / np.sin(incl)) *
-#     np.sqrt(1 - ecc**2) / (1 + ecc * np.sin(omega))
-#    ) / P
-
-#    t_exp /= 60*60*24*P
-
-    return ((x-ref) > -(dur+t_exp)/2) & ((x-ref) < (dur+t_exp)/2)
-
-
-
 
 def estimate_ccf_err(ccf, mask=None):
     

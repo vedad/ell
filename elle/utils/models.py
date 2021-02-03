@@ -3,7 +3,6 @@
 import numpy as np
 import astropy.units as u
 
-
 def get_light_curve(x, period, t0, aor, ror, incl,
                     ustar=None, ld=None, ecc=0, omega=90, sbratio=0,
                     oversample=1, texp=None):
@@ -159,4 +158,7 @@ def get_23_transit_duration(P, roa, ror, incl, ecc=0, omega=90):
         ) *
      np.sqrt(1 - ecc**2) / (1 + ecc * np.sin(omega))
     )
+
+def get_transit_mask(x, dur, texp=0, ref=0):
+    return ((x - ref) > -0.5 * (dur + texp)) & ((x - ref) < 0.5 * (dur + texp))
 
