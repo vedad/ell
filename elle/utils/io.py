@@ -36,15 +36,16 @@ def read(files,
                 value
                 )
 
-    N     = len(observables.time)
     start = get_header(files, instr.start)
     step  = get_header(files, instr.step)
 
-    rv  = np.atleast_2d(
-            [ start[i] + step[i] * np.arange(N) for i in range(N) ]
-            )
     ccf = np.atleast_2d(
             [ fits.getdata(x, instr.ccf)[order,:] for x in files ]
+            )
+    N, M     = ccf.shape
+
+    rv  = np.atleast_2d(
+            [ start[i] + step[i] * np.arange(M) for i in range(N) ]
             )
 
     return rv[:,::oversample], ccf[:,::oversample], observables
