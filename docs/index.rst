@@ -10,11 +10,16 @@ Welcome to elle's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   tutorials/quickstart_test
 
+.. Indices and tables
+.. ==================
 
-Indices and tables
-==================
+..
+  * :ref:`genindex`
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+..
+  * :ref:`modindex`
+
+..
+  * :ref:`search`
