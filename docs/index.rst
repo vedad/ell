@@ -30,6 +30,9 @@ into any trouble please open an issue.
    :maxdepth: 2
    :caption: Using elle:
 
+   user/install
+   user/api
+
 .. toctree::
    :maxdepth: 2
    :caption: Tutorials
