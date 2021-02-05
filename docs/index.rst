@@ -8,9 +8,9 @@ elle
 
 elle is a toolkit for modelling the line profile distortions and surface
 velocities of a star due to a transiting planet. The software is a Python
-implementation of the `reloaded, <https://arxiv.org/abs/1602.00322>`
+implementation of the `reloaded <https://arxiv.org/abs/1602.00322>`_ 
 Rossiter-McLaughlin method to measure `spin-orbit angles
-<https://arxiv.org/abs/1709.06376>` in exoplanet systems. The method is
+<https://arxiv.org/abs/1709.06376>`_ in exoplanet systems. The method is
 currently only applicable to the cross-correlation functions (CCF) of stellar
 spectra observed with stabilized high-resolution spectrographs. Some of the
 features of **elle** include:
