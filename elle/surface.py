@@ -3,17 +3,17 @@
 import numpy as np
 from scipy.integrate import quad
 
-from limbdark import *
-
-__all__ = ["LimbDarkSurface"]
+__all__ = ["Surface"]
 
 
 class Surface:
     def __init__(self, N=51):
 
         self.N        = N
-        self.limbdark = UniformLimbDark
 
+
+    def intensity(self, mu):
+        raise NotImplementedError
 
     def get_brightness_weighted(self, I, y):
         """ computes the brightness-weighted average of y occulted by the planet"""
@@ -113,7 +113,7 @@ class Surface:
         return v_avg
 
     def get_intensity(self, mu):
-        return self.limbdark.intensity(mu)
+        return self.intensity(mu)
 
     def get_mu_avg(self, orbit, x):
 
@@ -175,28 +175,5 @@ class Surface:
 
         return v
 
-
-class LimbDarkSurface(Surface):
-    def __init__(self, u=None, ld='quad', **kwargs):
-
-        super().__init__(**kwargs)
-
-        self.u = u
-
-        if ld == 'quad':
-            self.limbdark = QuadraticLimbDark
-        elif ld == 'lin':
-            raise NotImplementedError
-        elif ld == 'power-2':
-            raise NotImplementedError
-        elif ld == 'claret':
-            raise NotImplementedError
-        else:
-            raise NotImplementedError(
-            f"limb darkening model `{ld}` not understood"
-            )
-
-    def get_intensity(self, mu):
-        return self.limbdark.intensity(mu, self.u)
 
 
