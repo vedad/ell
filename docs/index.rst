@@ -13,22 +13,22 @@ Rossiter-McLaughlin method to measure `spin-orbit angles
 <https://arxiv.org/abs/1709.06376>`_ in exoplanet systems. The method is
 currently only applicable to the cross-correlation functions (CCF) of stellar
 spectra observed with stabilized high-resolution spectrographs. Some of the
-features of **elle** include:
+features of *elle* include:
 
 * various convenience functions for e.g. resampling, normalizing, and fitting CCFs 
   to recover the planet-occulted light.
 * brightness-weighted stellar surface velocities due to rotation and
   centre-to-limb convective variation.
-* publication-ready plots of the planet **trace** and stellar surface
+* publication-ready plots of the planet *trace* and stellar surface
   velocities.
 
-**elle** is available on `Github <https://github.com/vedad/elle>`_. If you run
+*elle* is available on `Github <https://github.com/vedad/elle>`_. If you run
 into any trouble please open an issue.
 
 
 .. toctree::
    :maxdepth: 2
-   :caption: Using elle:
+   :caption: Using elle
 
    user/install
    user/api
