@@ -12,13 +12,19 @@ affiliations:
    index: 1
 date: 1 February 2021
 
-# Optional fields if submitting to a AAS journal too, see this blog post:
-# https://blog.joss.theoj.org/2018/12/a-new-collaboration-with-aas-publishing
-aas-doi: 10.3847/xxxxx <- update this with the DOI from AAS once you know it.
-aas-journal: Astrophysical Journal <- The name of the AAS journal.
 ---
 
 # Summary
+
+There are a number of astrophysical processes that can significantly alter the
+orbits of planets during and after their formation. Some of these mechanisms are
+thought to be responsible for misaligning the planetary orbit with respect to the stellar
+rotation axis, while others are expected to produce coplanar systems. 
+Measuring the sky-projected spin-orbit angle (stellar obliquity) 
+has become commonplace,
+as these measurement have the potential to inform us of the formation, migration
+and dynamical histories of exoplanets. In most cases, the stellar obliquity is
+measured from the spectroscopic Rossiter-McLaughlin effect during transit.
 
 
 # Statement of need
