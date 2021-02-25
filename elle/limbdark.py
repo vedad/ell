@@ -9,9 +9,6 @@ __all__ = ["UniformLimbDark", "LinLimbDark", "QuadLimbDark"]
 
 class UniformLimbDark(Surface):
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
     def intensity(self, mu):
         return np.ones_like(mu)
 

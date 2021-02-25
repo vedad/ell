@@ -17,9 +17,12 @@ class Orbit:
             raise ValueError(
             "only one of `roa` or `aor` may be given, not both."
             )
+        else:
+            self.roa = None
+            self.aor = None
 
         self.ror    = ror
-        self.i_pl    = np.deg2rad(i_pl)
+        self.i_pl   = None if i_pl is None else np.deg2rad(i_pl)
         
 
     def get_planet_position(self, x):
@@ -46,6 +49,9 @@ class Orbit:
 
 #
     def _transform_to_orthogonal(self, x, y, l):
+
+        l = np.deg2rad(l)
+
         xn = x * np.cos(l) - y * np.sin(l)
         yn = x * np.sin(l) + y * np.cos(l)
         zn = np.sqrt(1 - xn**2 - yn**2)
@@ -54,6 +60,7 @@ class Orbit:
 
     def _rotate_around_x(self, x, y, z, i_star):
 
+        i_star = np.deg2rad(i_star)
         beta = 0.5*np.pi - i_star
 
         xrot = x
@@ -81,8 +88,6 @@ class Orbit:
     def get_latitudes(self, x, l, i_star):
         """ returns the latitudes relative to the equator transited by the
             planet """
-
-        l, i_star   = map(np.deg2rad, (l, i_star))
 
         yrot = self.get_planet_position_rotated(x, l, i_star)[1]
 
