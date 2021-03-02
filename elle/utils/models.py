@@ -2,6 +2,7 @@
 
 import numpy as np
 import astropy.units as u
+import sys
 
 def get_light_curve(x, period, t0, aor, ror, incl,
                     ustar=None, ld=None, ecc=0, omega=90, sbratio=0,
@@ -14,8 +15,8 @@ def get_light_curve(x, period, t0, aor, ror, incl,
     
     r1oa = 1/aor
     r2oa = r1oa * ror
-    fs = np.sqrt(ecc) * np.sin(np.deg2rad(omega))
-    fc = np.sqrt(ecc) * np.cos(np.deg2rad(omega))
+    f_s = np.sqrt(ecc) * np.sin(np.deg2rad(omega))
+    f_c = np.sqrt(ecc) * np.cos(np.deg2rad(omega))
 
     model = lc(x,
             radius_1=r1oa,
@@ -89,8 +90,8 @@ def get_rossiter_mclaughlin(x, period, t0, aor, ror, incl, K, vsini, ell,
     a  = a1 * (1 + 1/q)
     r1oa = 1/aor
     r2oa = r1oa * ror
-    fs = np.sqrt(ecc) * np.sin(np.deg2rad(omega))
-    fc = np.sqrt(ecc) * np.cos(np.deg2rad(omega))
+    f_s = np.sqrt(ecc) * np.sin(np.deg2rad(omega))
+    f_c = np.sqrt(ecc) * np.cos(np.deg2rad(omega))
     
     def _model(x, fw):
         return rv(x, 
@@ -102,8 +103,8 @@ def get_rossiter_mclaughlin(x, period, t0, aor, ror, incl, K, vsini, ell,
                   sbratio=0,
                   a=a, 
                   q=q, 
-                  f_s=fs, 
-                  f_c=fc, 
+                  f_s=f_s, 
+                  f_c=f_c, 
                   ld_1=ld,
                   ldc_1=ustar,
                   flux_weighted=fw,
