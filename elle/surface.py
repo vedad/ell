@@ -2,6 +2,11 @@
 
 import numpy as np
 from scipy.integrate import quad
+#import sys
+#import warnings
+#
+#if not sys.warnoptions:
+#    warnings.simplefilter("ignore")
 
 __all__ = ["Surface"]
 
@@ -9,7 +14,10 @@ __all__ = ["Surface"]
 class Surface:
     def __init__(self, N=51):
 
-        self.N        = N
+        self.N        = int(N)
+
+        if not self.N % 2:
+            raise ValueError("grid size `N` needs to be an odd integer")
 
 
     def intensity(self, mu):

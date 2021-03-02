@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from surface import Surface
+from .surface import Surface
 
 __all__ = ["UniformLimbDark", "LinLimbDark", "QuadLimbDark"]
 
@@ -17,10 +17,14 @@ class LinLimbDark(Surface):
     def __init__(self, u, **kwargs):
         super().__init__(**kwargs)
 
-        self.u = u
+        if isinstance(u, float):
+            self.u = [u]
+        else:
+            self.u = list(u)
+        
 
     def intensity(self, mu):
-        return  1 - self.u * (1 - mu)
+        return  1 - self.u[0] * (1 - mu)
 
 class QuadLimbDark(Surface):
 
