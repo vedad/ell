@@ -17,7 +17,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'elle'
+project = 'ell'
 copyright = '2021, Vedad Kunovac Hodzic'
 author = 'Vedad Kunovac Hodzic'
 
@@ -47,12 +47,13 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # a list of builtin themes.
 #
 html_theme = 'alabaster'
-html_style = 'css/elle.css'
+html_style = 'css/ell.css'
 html_sidebars = {
    '**': ['about.html', 'globaltoc.html'],
    'using/windows': ['windowssidebar.html'],
 }
 html_theme_options = {
+        'logo': '_static/logo/vedad_python_logo_small.png',
         'head_font_family':'Roboto',
 }
 # Add any paths that contain custom static files (such as style sheets) here,

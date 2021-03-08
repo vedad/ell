@@ -37,7 +37,7 @@ into any trouble please open an issue.
    :maxdepth: 2
    :caption: Tutorials
 
-   tutorials/quickstart_test
+   tutorials/quickstart
 
 .. Indices and tables
 .. ==================
