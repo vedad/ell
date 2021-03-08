@@ -1,0 +1,7 @@
+channels:
+  - conda-forge
+dependencies:
+  - python==3.7
+  - sphinx>=1.4
+  - pip:
+    - nbsphinx
