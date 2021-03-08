@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from elle.orbit import Orbit
+from ell.orbit import Orbit
 
 def test_input():
 
