@@ -10,6 +10,10 @@ from ell.orbit import Orbit
 
 def test_rotational_velocity():
 
+    roa  = 0.114
+    ror  = 0.103
+    i_pl = 90
+
     orbit = Orbit(roa=roa, ror=ror, i_pl=i_pl)
 
     edge = 1 + orbit.ror - 5e-4
