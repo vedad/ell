@@ -66,7 +66,7 @@ class Surface:
             x = self._oversample_grid(x, texp, oversample)
 
         # compute the brightness weighted position on the disc
-        mu_avg = self.get_mu_avg(orbit, x)
+        mu_avg = self.get_mu(orbit, x)
 
         # compute the centre-to-limb convective blueshift velocity
         v = np.sum([c[i] * mu_avg**i for i in range(clen)], axis=0)
@@ -92,6 +92,7 @@ class Surface:
         ell    = np.deg2rad(ell)
         i_star = np.deg2rad(i_star)
         beta   = 0.5 * np.pi - i_star # rotation around orthogonal x axis
+        n      = len(x)
 
         # oversample grid
         if texp is not None and oversample > 1:
@@ -115,24 +116,43 @@ class Surface:
         v = self.get_brightness_weighted(I, V)
 
         # average the oversampled grid
-        v_avg = np.array([np.mean(v[i:i+oversample])
-                         for i in range(0, len(v), oversample)])
-
-        return v_avg
+        return np.mean(
+                v.reshape((n, oversample)), axis=1
+                )
 
     def get_intensity(self, mu):
         return self.intensity(mu)
 
-    def get_mu_avg(self, orbit, x):
+    def get_mu(self, orbit, x):
 
+        # compute positions
         Xp, Yp, M = self._get_grid(orbit, x)
-        MU = orbit._xy_to_mu(Xp, Yp)
-        
-        I = self.get_intensity(MU)
-        I[~M] = 0
+        MU        = orbit._xy_to_mu(Xp, Yp)
+        I         = self.get_intensity(MU)
+
+        print(np.count_nonzero(M))
+        # only use cells inside planet/disc
+        I[~M]  = 0
+        MU[~M] = 0
     
         return self.get_brightness_weighted(I, MU)
 
+    def get_latitudes(self, orbit, x, l, i_star):
+
+        # compute positions and brightness
+        Xp, Yp, M = self._get_grid(orbit, x)
+        MU        = orbit._xy_to_mu(Xp, Yp)
+        I         = self.get_intensity(MU)
+
+        XYZ  = orbit._transform_to_orthogonal(Xp, Yp, l)
+        Yrot = orbit._rotate_around_x(*XYZ, i_star)[1]
+
+        I[~M]    = 0
+        Yrot[~M] = 0
+
+        yrot = self.get_brightness_weighted(I, Yrot)
+
+        return np.rad2deg(np.arcsin(yrot))
 
     def _compute_grid(self, ror):
 
@@ -155,10 +175,10 @@ class Surface:
         Yp = Y + yp[:,None,None]
 
         # select points inside planet disc
-        inside_planet = np.sqrt(X**2 + Y**2) < orbit.ror
+        inside_planet = np.sqrt(X**2 + Y**2) <= orbit.ror
 
         # select points inside stellar disc
-        inside_star   = np.sqrt(Xp**2 + Yp**2) < 1
+        inside_star   = np.sqrt(Xp**2 + Yp**2) <= 1
 
         # boolean mask where `True` points are behind the planet and on the
         # stellar disc

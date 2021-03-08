@@ -30,6 +30,9 @@ class Orbit:
         self.i_pl   = None if i_pl is None else np.deg2rad(i_pl)
         
 
+    def __str__(self):
+        return f"Orbit: a/R = {self.aor}, r/R = {self.ror}, i_pl = {np.rad2deg(self.i_pl)} deg"
+
     def get_planet_position(self, x):
 
         xp = np.sin(2 * np.pi * x) / self.roa
