@@ -1,4 +1,4 @@
 prune paper
 prune docs
 prune examples
-prune ell/utils
+prune olio/utils
