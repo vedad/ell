@@ -2,3 +2,4 @@ prune paper
 prune docs
 prune examples
 prune olio/utils
+prune tests
