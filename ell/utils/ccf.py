@@ -15,6 +15,9 @@ import matplotlib.colors as colors
 import matplotlib.cm as cm
 import matplotlib.ticker as plticker
 
+def lazy_mode():
+    raise NotImplementedError
+
 
 def estimate_ccf_err(ccf, mask=None):
     

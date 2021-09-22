@@ -58,7 +58,7 @@ class Orbit:
 #
     def _transform_to_orthogonal(self, x, y, l):
 
-        l = np.deg2rad(l)
+#        l = np.deg2rad(l)
 
         xn = x * np.cos(l) - y * np.sin(l)
         yn = x * np.sin(l) + y * np.cos(l)
@@ -68,7 +68,7 @@ class Orbit:
 
     def _rotate_around_x(self, x, y, z, i_star):
 
-        i_star = np.deg2rad(i_star)
+#        i_star = np.deg2rad(i_star)
         beta = 0.5*np.pi - i_star
 
         xrot = x

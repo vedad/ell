@@ -91,7 +91,7 @@ class Surface:
 
         ell    = np.deg2rad(ell)
         i_star = np.deg2rad(i_star)
-        beta   = 0.5 * np.pi - i_star # rotation around orthogonal x axis
+#        beta   = 0.5 * np.pi - np.deg2rad(i_star) # rotation around orthogonal x axis
         n      = len(x)
 
         # oversample grid

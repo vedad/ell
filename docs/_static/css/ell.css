@@ -1,6 +1,14 @@
 @import '../alabaster.css';
 @import url(https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500);
 
+/*.wy-nav-content {
+    max-width: none;
+}*/
+
+.wy-nav-content {
+    max-width: 75% !important;
+}
+
 body{
     font-family:'Roboto', sans-serif;
     font-weight:300;

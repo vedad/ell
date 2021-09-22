@@ -423,9 +423,55 @@ def plot_limbdark_map(u=[0.4, 0.3], ld='quad', Nxy=200):
     return fig
 
 def plot_velocity_map(v_eq, ell, i_star=90, alpha=0, Nxy=200,
+                    u=None,
                     vmin=None,
                     vmax=None,
-                    planet=None):
+                    planet=None,
+                    figsize=(3.39, 3.39)
+                    ):
+
+
+#    inc = np.deg2rad(i_star)
+#    obl = np.deg2rad(ell)
+#    # Angular quantities
+#    ci = np.cos(inc)
+#    si = np.sin(inc)
+#    co = np.cos(obl)
+#    so = np.sin(obl)
+#
+#    # Latitude lines
+#    dlat=np.pi / 6
+#    res = []
+#    latlines = np.arange(-np.pi / 2, np.pi / 2, dlat)[1:]
+#    for lat in latlines:
+#
+#        # Figure out the equation of the ellipse
+#        y0 = np.sin(lat) * si
+#        a = np.cos(lat)
+#        b = a * ci
+#        x = np.linspace(-a, a, 1000)
+#        y1 = y0 - b * np.sqrt(1 - (x / a) ** 2)
+#        y2 = y0 + b * np.sqrt(1 - (x / a) ** 2)
+#
+#        # Mask lines on the backside
+#        if si != 0:
+#            if inc > np.pi / 2:
+#                ymax = y1[np.argmax(x ** 2 + y1 ** 2)]
+#                y1[y1 < ymax] = np.nan
+#                ymax = y2[np.argmax(x ** 2 + y2 ** 2)]
+#                y2[y2 < ymax] = np.nan
+#            else:
+#                ymax = y1[np.argmax(x ** 2 + y1 ** 2)]
+#                y1[y1 > ymax] = np.nan
+#                ymax = y2[np.argmax(x ** 2 + y2 ** 2)]
+#                y2[y2 > ymax] = np.nan
+#
+#        # Rotate them
+#        for y in (y1, y2):
+#            xr = x * co - y * so
+#            yr = x * so + y * co
+#            res.append((xr, yr))
+
 
     ell    = np.deg2rad(ell)
     i_star = np.deg2rad(i_star)
@@ -446,14 +492,25 @@ def plot_velocity_map(v_eq, ell, i_star=90, alpha=0, Nxy=200,
     ynorm_mark = znorm * np.sin(beta) + ynorm * np.cos(beta)
     V          = (xnorm * v_eq * np.sin(i_star) *  (1 - alpha * ynorm_mark**2))
 
+    if u is not None:
+        DELTA = np.sqrt(X**2 + Y**2)
+        MU = np.sqrt(1 - DELTA**2)
+
+        I = 1 - u[0] * (1 - MU) - u[1] * (1 - MU)**2 
+        V *= I
+
+
     theta = np.linspace(0, 2*np.pi, 4000)
     r = 1
     _x = r * np.cos(theta)
     _y = r * np.sin(theta)
 
     plt.style.use('paper')
-    fig, ax = plt.subplots()#figsize=(6,6))
-    ax.plot(_x, _y, 'black', lw=1.0, rasterized=True)
+    fig, ax = plt.subplots(figsize=figsize)#figsize=(6,6))
+    ax.plot(_x, _y, 'black', lw=1.5, rasterized=True)
+
+#    for xlat, ylat in res:
+#        ax.plot(xlat, ylat, lw=0.5, c='k', alpha=0.6)
 
 #    from matplotlib import cm
     cmap = cm.get_cmap("RdBu_r")
@@ -462,7 +519,8 @@ def plot_velocity_map(v_eq, ell, i_star=90, alpha=0, Nxy=200,
     if vmax is None:
         vmax = V[~np.isnan(V)].max()
 
-    norm = colors.DivergingNorm(vmin=vmin, vcenter=0., vmax=vmax)
+#    norm = colors.DivergingNorm(vmin=vmin, vcenter=0., vmax=vmax)
+    norm = colors.TwoSlopeNorm(vmin=vmin, vcenter=0., vmax=vmax)
 
     # RdBu_r, coolwarm, bwr, seismic
 

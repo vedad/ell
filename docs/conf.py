@@ -53,8 +53,9 @@ html_sidebars = {
    'using/windows': ['windowssidebar.html'],
 }
 html_theme_options = {
-        'logo': '_static/logo/vedad_python_logo_small.png',
+        'logo': 'logo/vedad_python_logo_300ppi.png',
         'head_font_family':'Roboto',
+        'body_max_width': '150%',
 }
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -62,5 +63,5 @@ html_theme_options = {
 html_static_path = ['_static']
 
 #html_css_files = [
-#        "css/css-style.css",
+#        "css/ell.css",
 #]
