@@ -17,9 +17,9 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'ell'
-copyright = '2021, Vedad Kunovac Hodzic'
-author = 'Vedad Kunovac Hodzic'
+project = 'olio'
+author = 'Vedad Kunovac'
+copyright = '2021, 2022, 2023, 2024' + author
 
 
 # -- General configuration ---------------------------------------------------
@@ -27,9 +27,17 @@ author = 'Vedad Kunovac Hodzic'
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
+# extensions = [
+#         "sphinx.ext.mathjax",
+#         "nbsphinx",
+# ]
 extensions = [
-        "sphinx.ext.mathjax",
-        "nbsphinx",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.mathjax",
+    "myst_nb",
+    "IPython.sphinxext.ipython_console_highlighting",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -46,8 +54,8 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
-html_style = 'css/ell.css'
+html_theme = 'sphinx_book_theme'
+#html_style = 'css/olio.css'
 html_sidebars = {
    '**': ['about.html', 'globaltoc.html'],
    'using/windows': ['windowssidebar.html'],
@@ -57,6 +65,19 @@ html_theme_options = {
         'head_font_family':'Roboto',
         'body_max_width': '150%',
 }
+#html_theme_options = {
+#    "path_to_docs": "docs",
+#    "repository_url": "https://github.com/vedad/olio",
+#    "repository_branch": "main",
+   # "launch_buttons": {
+    #    "binderhub_url": "https://mybinder.org",
+   #     "notebook_interface": "classic",
+   # },
+   # "use_edit_page_button": True,
+   # "use_issues_button": True,
+#    "use_repository_button": True,
+#    "use_download_button": True,
+#}
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
